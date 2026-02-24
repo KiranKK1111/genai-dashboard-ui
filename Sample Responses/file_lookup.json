@@ -1,0 +1,20 @@
+{
+    "success": true,
+    "response": {
+        "type": "file_lookup",
+        "intent": "Get me more details",
+        "confidence": "medium",
+        "message": "The uploaded file contains more details about sales data for various products across different regions and categories. The data includes product information, customer details, and revenue. The summary provides an overview of the sales data, including the total number of products sold, the sales by category and region, and revenue trends.",
+        "related_queries": [
+            "Analyze the sales data by region.",
+            "Compare the sales of different products.",
+            "Examine the revenue trend over time."
+        ],
+        "metadata": {
+            "requires_date": true,
+            "complexity": "medium",
+            "cache_key": "more_details"
+        },
+        "files": []
+    }
+}

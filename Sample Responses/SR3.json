@@ -1,0 +1,59 @@
+{
+    "success": true,
+    "response": {
+        "id": "msg_1771822332410",
+        "object": "chat.response",
+        "created_at": 1771822332410,
+        "session_id": "0f43be5c-551d-4349-82d9-c75ec626677b",
+        "mode": "chat",
+        "assistant": {
+            "role": "assistant",
+            "title": null,
+            "content": [
+                {
+                    "type": "paragraph",
+                    "text": "🤖 Hello there! It's nice to meet you. Is there something I can help you with or would you like me to assist you in any way? Please let me know how I can be of service.",
+                    "items": null,
+                    "variant": null,
+                    "headers": null,
+                    "rows": null,
+                    "language": null,
+                    "emoji": "🤖"
+                }
+            ]
+        },
+        "artifacts": {
+            "files_used": [],
+            "citations": [],
+            "sql": null
+        },
+        "visualizations": [],
+        "routing": {
+            "type": "chat",
+            "intent": "general_answer",
+            "confidence": 0.7
+        },
+        "followups": [
+            {
+                "id": "fu_1",
+                "text": "Tell me more about this"
+            },
+            {
+                "id": "fu_2",
+                "text": "Give me an example"
+            },
+            {
+                "id": "fu_3",
+                "text": "How does this compare to...?"
+            }
+        ],
+        "debug": {
+            "normalized_user_request": "Hello",
+            "requires_date": null,
+            "complexity": "low",
+            "requires_data": false
+        }
+    },
+    "timestamp": 1771822332424,
+    "original_query": "Hello"
+}

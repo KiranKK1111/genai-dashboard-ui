@@ -1,0 +1,936 @@
+{
+    "success": true,
+    "response": {
+        "id": "msg_1771847981831",
+        "object": "chat.response",
+        "created_at": 1771847981831,
+        "session_id": "8b0247f1-56e9-47d3-88c1-c1ab4c8986b7",
+        "mode": "sql",
+        "assistant": {
+            "role": "assistant",
+            "title": "📊 Query Results (5000 rows)",
+            "content": [
+                {
+                    "type": "paragraph",
+                    "text": "✅ I found **5000 rows** matching your query (took 0.10s).",
+                    "items": null,
+                    "variant": null,
+                    "headers": null,
+                    "rows": null,
+                    "language": null,
+                    "emoji": "✅"
+                },
+                {
+                    "type": "table",
+                    "text": null,
+                    "items": null,
+                    "variant": null,
+                    "headers": [
+                        "customer_id",
+                        "customer_code",
+                        "first_name",
+                        "last_name",
+                        "dob",
+                        "gender",
+                        "phone",
+                        "email",
+                        "pan",
+                        "aadhar",
+                        "address_line1",
+                        "city",
+                        "state",
+                        "pincode",
+                        "kyc_verified",
+                        "created_at"
+                    ],
+                    "rows": [
+                        [
+                            "6",
+                            "CUST0000006",
+                            "Priya",
+                            "Iyer",
+                            "1965-01-07",
+                            "M",
+                            "9000000006",
+                            "user6@example.com",
+                            "59A620006D",
+                            "100000000006",
+                            "H.No 7, Street 7",
+                            "Pune",
+                            "MH",
+                            "500006",
+                            "False",
+                            "2026-02-20T10:37:32.816870+00:00"
+                        ],
+                        [
+                            "16",
+                            "CUST0000016",
+                            "Sridhar",
+                            "Sharma",
+                            "1965-01-17",
+                            "F",
+                            "9000000016",
+                            "user16@example.com",
+                            "15F6900168",
+                            "100000000016",
+                            "H.No 17, Street 17",
+                            "Pune",
+                            "MH",
+                            "500016",
+                            "True",
+                            "2026-02-20T10:37:32.816870+00:00"
+                        ],
+                        [
+                            "26",
+                            "CUST0000026",
+                            "Meera",
+                            "Reddy",
+                            "1965-01-27",
+                            "O",
+                            "9000000026",
+                            "user26@example.com",
+                            "9425A0026B",
+                            "100000000026",
+                            "H.No 27, Street 27",
+                            "Pune",
+                            "MH",
+                            "500026",
+                            "True",
+                            "2026-02-20T10:37:32.816870+00:00"
+                        ],
+                        [
+                            "36",
+                            "CUST0000036",
+                            "Priya",
+                            "Das",
+                            "1965-02-06",
+                            "M",
+                            "9000000036",
+                            "user36@example.com",
+                            "CF4D800368",
+                            "100000000036",
+                            "H.No 37, Street 37",
+                            "Pune",
+                            "MH",
+                            "500036",
+                            "True",
+                            "2026-02-20T10:37:32.816870+00:00"
+                        ],
+                        [
+                            "46",
+                            "CUST0000046",
+                            "Anjali",
+                            "Singh",
+                            "1965-02-16",
+                            "F",
+                            "9000000046",
+                            "user46@example.com",
+                            "5B4A00046C",
+                            "100000000046",
+                            "H.No 47, Street 47",
+                            "Pune",
+                            "MH",
+                            "500046",
+                            "False",
+                            "2026-02-20T10:37:32.816870+00:00"
+                        ],
+                        [
+                            "56",
+                            "CUST0000056",
+                            "Asha",
+                            "Iyer",
+                            "1965-02-26",
+                            "O",
+                            "9000000056",
+                            "user56@example.com",
+                            "C80DF0056C",
+                            "100000000056",
+                            "H.No 57, Street 7",
+                            "Pune",
+                            "MH",
+                            "500056",
+                            "False",
+                            "2026-02-20T10:37:32.816870+00:00"
+                        ],
+                        [
+                            "66",
+                            "CUST0000066",
+                            "Asha",
+                            "Patel",
+                            "1965-03-08",
+                            "M",
+                            "9000000066",
+                            "user66@example.com",
+                            "E5A8A00666",
+                            "100000000066",
+                            "H.No 67, Street 17",
+                            "Pune",
+                            "MH",
+                            "500066",
+                            "False",
+                            "2026-02-20T10:37:32.816870+00:00"
+                        ],
+                        [
+                            "76",
+                            "CUST0000076",
+                            "Arjun",
+                            "Singh",
+                            "1965-03-18",
+                            "F",
+                            "9000000076",
+                            "user76@example.com",
+                            "12E360076C",
+                            "100000000076",
+                            "H.No 77, Street 27",
+                            "Pune",
+                            "MH",
+                            "500076",
+                            "True",
+                            "2026-02-20T10:37:32.816870+00:00"
+                        ],
+                        [
+                            "86",
+                            "CUST0000086",
+                            "Arjun",
+                            "Singh",
+                            "1965-03-28",
+                            "O",
+                            "9000000086",
+                            "user86@example.com",
+                            "83C700086F",
+                            "100000000086",
+                            "H.No 87, Street 37",
+                            "Pune",
+                            "MH",
+                            "500086",
+                            "True",
+                            "2026-02-20T10:37:32.816870+00:00"
+                        ],
+                        [
+                            "96",
+                            "CUST0000096",
+                            "Priya",
+                            "Reddy",
+                            "1965-04-07",
+                            "M",
+                            "9000000096",
+                            "user96@example.com",
+                            "A4EDC0096E",
+                            "100000000096",
+                            "H.No 97, Street 47",
+                            "Pune",
+                            "MH",
+                            "500096",
+                            "False",
+                            "2026-02-20T10:37:32.816870+00:00"
+                        ]
+                    ],
+                    "language": null,
+                    "emoji": "📑"
+                },
+                {
+                    "type": "callout",
+                    "text": "ℹ️ Showing first 10 of 5000 rows. Use filtering or export for the full result set.",
+                    "items": null,
+                    "variant": "info",
+                    "headers": null,
+                    "rows": null,
+                    "language": null,
+                    "emoji": "ℹ️"
+                },
+                {
+                    "type": "callout",
+                    "text": "📈 Would you like to create a visualization, export results to CSV, or refine the query?",
+                    "items": null,
+                    "variant": "next",
+                    "headers": null,
+                    "rows": null,
+                    "language": null,
+                    "emoji": "📈"
+                }
+            ]
+        },
+        "artifacts": {
+            "files_used": [],
+            "citations": [],
+            "sql": "SELECT * FROM customers WHERE city ILIKE '%Pune%'"
+        },
+        "visualizations": {
+            "chart_id": "v1",
+            "type": "multi_viz",
+            "title": "Query Results",
+            "subtitle": null,
+            "description": null,
+            "emoji": "📊",
+            "config": {
+                "primary_view": "table",
+                "available_views": [
+                    "table",
+                    "bar",
+                    "line",
+                    "pie",
+                    "scatter"
+                ]
+            },
+            "field_schema": {
+                "customer_id": {
+                    "type": "integer",
+                    "role_hint": "id",
+                    "cardinality": 5000,
+                    "sample_values": [
+                        6,
+                        16,
+                        26
+                    ]
+                },
+                "customer_code": {
+                    "type": "string",
+                    "role_hint": "dimension",
+                    "cardinality": 5000,
+                    "sample_values": [
+                        "CUST0000006",
+                        "CUST0000016",
+                        "CUST0000026"
+                    ]
+                },
+                "first_name": {
+                    "type": "string",
+                    "role_hint": "dimension",
+                    "cardinality": 10,
+                    "sample_values": [
+                        "Priya",
+                        "Sridhar",
+                        "Meera"
+                    ]
+                },
+                "last_name": {
+                    "type": "string",
+                    "role_hint": "dimension",
+                    "cardinality": 10,
+                    "sample_values": [
+                        "Iyer",
+                        "Sharma",
+                        "Reddy"
+                    ]
+                },
+                "dob": {
+                    "type": "string",
+                    "role_hint": "dimension",
+                    "cardinality": 2000,
+                    "sample_values": [
+                        "1965-01-07",
+                        "1965-01-17",
+                        "1965-01-27"
+                    ]
+                },
+                "gender": {
+                    "type": "string",
+                    "role_hint": "dimension",
+                    "cardinality": 3,
+                    "sample_values": [
+                        "M",
+                        "F",
+                        "O"
+                    ]
+                },
+                "phone": {
+                    "type": "string",
+                    "role_hint": "dimension",
+                    "cardinality": 5000,
+                    "sample_values": [
+                        "9000000006",
+                        "9000000016",
+                        "9000000026"
+                    ]
+                },
+                "email": {
+                    "type": "string",
+                    "role_hint": "dimension",
+                    "cardinality": 5000,
+                    "sample_values": [
+                        "user6@example.com",
+                        "user16@example.com",
+                        "user26@example.com"
+                    ]
+                },
+                "pan": {
+                    "type": "string",
+                    "role_hint": "dimension",
+                    "cardinality": 5000,
+                    "sample_values": [
+                        "59A620006D",
+                        "15F6900168",
+                        "9425A0026B"
+                    ]
+                },
+                "aadhar": {
+                    "type": "string",
+                    "role_hint": "dimension",
+                    "cardinality": 5000,
+                    "sample_values": [
+                        "100000000006",
+                        "100000000016",
+                        "100000000026"
+                    ]
+                },
+                "address_line1": {
+                    "type": "string",
+                    "role_hint": "dimension",
+                    "cardinality": 50,
+                    "sample_values": [
+                        "H.No 7, Street 7",
+                        "H.No 17, Street 17",
+                        "H.No 27, Street 27"
+                    ]
+                },
+                "city": {
+                    "type": "string",
+                    "role_hint": "geo_admin2",
+                    "cardinality": 1,
+                    "sample_values": [
+                        "Pune",
+                        "Pune",
+                        "Pune"
+                    ]
+                },
+                "state": {
+                    "type": "string",
+                    "role_hint": "geo_admin1",
+                    "cardinality": 1,
+                    "sample_values": [
+                        "MH",
+                        "MH",
+                        "MH"
+                    ]
+                },
+                "pincode": {
+                    "type": "string",
+                    "role_hint": "dimension",
+                    "cardinality": 5000,
+                    "sample_values": [
+                        "500006",
+                        "500016",
+                        "500026"
+                    ]
+                },
+                "kyc_verified": {
+                    "type": "boolean",
+                    "role_hint": "dimension",
+                    "cardinality": 2,
+                    "sample_values": [
+                        false,
+                        true,
+                        true
+                    ]
+                },
+                "created_at": {
+                    "type": "string",
+                    "role_hint": "time",
+                    "cardinality": 1,
+                    "sample_values": [
+                        "2026-02-20T10:37:32.816870+00:00",
+                        "2026-02-20T10:37:32.816870+00:00",
+                        "2026-02-20T10:37:32.816870+00:00"
+                    ]
+                }
+            },
+            "aggregators": {
+                "views": [
+                    "bar",
+                    "line",
+                    "pie",
+                    "table"
+                ],
+                "bar": {
+                    "auto_render_on_select": true,
+                    "requires_transform": true,
+                    "controls": [
+                        {
+                            "id": "x_dimension",
+                            "label": "X Axis (Group By)",
+                            "kind": "dimension",
+                            "type": "field",
+                            "allowed_field_types": [
+                                "string",
+                                "boolean",
+                                "date",
+                                "datetime"
+                            ],
+                            "field_options": [
+                                "customer_code",
+                                "first_name",
+                                "last_name",
+                                "dob",
+                                "gender",
+                                "phone",
+                                "email",
+                                "pan",
+                                "aadhar",
+                                "address_line1",
+                                "city",
+                                "state",
+                                "pincode",
+                                "kyc_verified"
+                            ],
+                            "description": "Categorical field to group by"
+                        },
+                        {
+                            "id": "y_metric",
+                            "label": "Y Axis (Metric)",
+                            "kind": "metric",
+                            "type": "metric_builder",
+                            "metric_op_options": [
+                                "count",
+                                "count_distinct",
+                                "sum",
+                                "avg",
+                                "min",
+                                "max"
+                            ],
+                            "metric_field_options": [
+                                "*"
+                            ],
+                            "numeric_fields": [],
+                            "description": "Metric: select operation and field"
+                        },
+                        {
+                            "id": "series_dimension",
+                            "label": "Series/Stack (Optional)",
+                            "kind": "dimension",
+                            "type": "field",
+                            "field_options": [
+                                "customer_code",
+                                "first_name",
+                                "last_name",
+                                "dob",
+                                "gender",
+                                "phone",
+                                "email",
+                                "pan",
+                                "aadhar",
+                                "address_line1",
+                                "city",
+                                "state",
+                                "pincode",
+                                "kyc_verified"
+                            ],
+                            "optional": true,
+                            "description": "Optional stacking dimension"
+                        },
+                        {
+                            "id": "top_k",
+                            "label": "Top K",
+                            "kind": "option",
+                            "type": "number",
+                            "min": 3,
+                            "max": 50,
+                            "description": "Limit to top K results"
+                        },
+                        {
+                            "id": "sort",
+                            "label": "Sort",
+                            "kind": "option",
+                            "type": "enum",
+                            "values": [
+                                "metric_desc",
+                                "metric_asc",
+                                "dimension_asc",
+                                "dimension_desc"
+                            ],
+                            "description": "Sort order"
+                        }
+                    ],
+                    "default_selection": {
+                        "x_dimension": {
+                            "field": "customer_code"
+                        },
+                        "y_metric": {
+                            "op": "count",
+                            "field": "*",
+                            "as": "count_val"
+                        },
+                        "series_dimension": null,
+                        "top_k": 10,
+                        "sort": "metric_desc"
+                    },
+                    "numeric_fields": [],
+                    "categorical_fields": [
+                        "customer_code",
+                        "first_name",
+                        "last_name",
+                        "dob",
+                        "gender",
+                        "phone",
+                        "email",
+                        "pan",
+                        "aadhar",
+                        "address_line1",
+                        "city",
+                        "state",
+                        "pincode",
+                        "kyc_verified"
+                    ],
+                    "transform_template": {
+                        "type": "aggregate",
+                        "group_by": [
+                            {
+                                "from_control": "x_dimension"
+                            }
+                        ],
+                        "metrics": [
+                            {
+                                "from_control": "y_metric"
+                            }
+                        ],
+                        "series": {
+                            "from_control": "series_dimension"
+                        },
+                        "order_by": [
+                            {
+                                "metric_from": "y_metric",
+                                "direction_from": "sort"
+                            }
+                        ],
+                        "limit": {
+                            "from_control": "top_k"
+                        }
+                    },
+                    "style": {
+                        "palette_mode": "categorical",
+                        "palette_name": "random",
+                        "seed_source": "chart_id",
+                        "assignment": "by_category",
+                        "fallback_color": "theme_primary"
+                    }
+                },
+                "line": {
+                    "auto_render_on_select": true,
+                    "requires_transform": true,
+                    "controls": [
+                        {
+                            "id": "x_time",
+                            "label": "Time Field",
+                            "kind": "dimension",
+                            "type": "field",
+                            "field_options": [
+                                "created_at"
+                            ],
+                            "allowed_field_types": [
+                                "date",
+                                "datetime"
+                            ],
+                            "description": "Time field for X-axis"
+                        },
+                        {
+                            "id": "bucket",
+                            "label": "Time Bucket",
+                            "kind": "option",
+                            "type": "enum",
+                            "values": [
+                                "hour",
+                                "day",
+                                "week",
+                                "month",
+                                "year"
+                            ],
+                            "description": "Aggregation period"
+                        },
+                        {
+                            "id": "y_metric",
+                            "label": "Y Metric",
+                            "kind": "metric",
+                            "type": "metric_builder",
+                            "metric_op_options": [
+                                "count",
+                                "count_distinct",
+                                "sum",
+                                "avg"
+                            ],
+                            "metric_field_options": [
+                                "*"
+                            ],
+                            "numeric_fields": [],
+                            "description": "Metric to chart"
+                        },
+                        {
+                            "id": "series_dimension",
+                            "label": "Series (Optional)",
+                            "kind": "dimension",
+                            "type": "field",
+                            "field_options": [
+                                "customer_code",
+                                "first_name",
+                                "last_name",
+                                "dob",
+                                "gender",
+                                "phone",
+                                "email",
+                                "pan",
+                                "aadhar",
+                                "address_line1",
+                                "city",
+                                "state",
+                                "pincode",
+                                "kyc_verified"
+                            ],
+                            "optional": true,
+                            "description": "Multiple lines per category"
+                        }
+                    ],
+                    "default_selection": {
+                        "x_time": {
+                            "field": "created_at or null"
+                        },
+                        "bucket": "day",
+                        "y_metric": {
+                            "op": "count",
+                            "field": "*",
+                            "as": "count"
+                        },
+                        "series_dimension": null
+                    },
+                    "numeric_fields": [],
+                    "categorical_fields": [
+                        "customer_code",
+                        "first_name",
+                        "last_name",
+                        "dob",
+                        "gender",
+                        "phone",
+                        "email",
+                        "pan",
+                        "aadhar",
+                        "address_line1",
+                        "city",
+                        "state",
+                        "pincode",
+                        "kyc_verified"
+                    ],
+                    "transform_template": {
+                        "type": "time_aggregate",
+                        "time_field": {
+                            "from_control": "x_time"
+                        },
+                        "bucket": {
+                            "from_control": "bucket"
+                        },
+                        "metrics": [
+                            {
+                                "from_control": "y_metric"
+                            }
+                        ],
+                        "series": {
+                            "from_control": "series_dimension"
+                        }
+                    },
+                    "style": {
+                        "palette_mode": "single",
+                        "palette_name": "theme_primary"
+                    }
+                },
+                "pie": {
+                    "auto_render_on_select": true,
+                    "requires_transform": true,
+                    "controls": [
+                        {
+                            "id": "label_dimension",
+                            "label": "Category",
+                            "kind": "dimension",
+                            "type": "field",
+                            "field_options": [
+                                "customer_code",
+                                "first_name",
+                                "last_name",
+                                "dob",
+                                "gender",
+                                "phone",
+                                "email",
+                                "pan",
+                                "aadhar",
+                                "address_line1",
+                                "city",
+                                "state",
+                                "pincode",
+                                "kyc_verified"
+                            ],
+                            "allowed_field_types": [
+                                "string",
+                                "boolean"
+                            ],
+                            "description": "Pie slice dimension"
+                        },
+                        {
+                            "id": "value_metric",
+                            "label": "Value Metric",
+                            "kind": "metric",
+                            "type": "metric_builder",
+                            "metric_op_options": [
+                                "count",
+                                "count_distinct",
+                                "sum",
+                                "avg"
+                            ],
+                            "metric_field_options": [
+                                "*"
+                            ],
+                            "numeric_fields": [],
+                            "description": "Slice size metric"
+                        },
+                        {
+                            "id": "top_k",
+                            "label": "Top K (+ Others)",
+                            "kind": "option",
+                            "type": "number",
+                            "min": 3,
+                            "max": 20,
+                            "description": "Top K categories, rest as Others"
+                        }
+                    ],
+                    "default_selection": {
+                        "label_dimension": {
+                            "field": "gender"
+                        },
+                        "value_metric": {
+                            "op": "count",
+                            "field": "*",
+                            "as": "count"
+                        },
+                        "top_k": 8
+                    },
+                    "numeric_fields": [],
+                    "categorical_fields": [
+                        "customer_code",
+                        "first_name",
+                        "last_name",
+                        "dob",
+                        "gender",
+                        "phone",
+                        "email",
+                        "pan",
+                        "aadhar",
+                        "address_line1",
+                        "city",
+                        "state",
+                        "pincode",
+                        "kyc_verified"
+                    ],
+                    "transform_template": {
+                        "type": "aggregate",
+                        "group_by": [
+                            {
+                                "from_control": "label_dimension"
+                            }
+                        ],
+                        "metrics": [
+                            {
+                                "from_control": "value_metric"
+                            }
+                        ],
+                        "limit": {
+                            "from_control": "top_k"
+                        },
+                        "others_bucket": {
+                            "enabled": true,
+                            "label": "Others"
+                        }
+                    },
+                    "style": {
+                        "palette_mode": "categorical",
+                        "palette_name": "random",
+                        "seed_source": "chart_id",
+                        "assignment": "by_category",
+                        "fallback_color": "theme_primary"
+                    }
+                },
+                "table": {
+                    "auto_render_on_select": false,
+                    "requires_transform": false,
+                    "controls": [],
+                    "default_selection": {},
+                    "numeric_fields": [],
+                    "categorical_fields": [
+                        "customer_code",
+                        "first_name",
+                        "last_name",
+                        "dob",
+                        "gender",
+                        "phone",
+                        "email",
+                        "pan",
+                        "aadhar",
+                        "address_line1",
+                        "city",
+                        "state",
+                        "pincode",
+                        "kyc_verified"
+                    ],
+                    "transform_template": {
+                        "type": "none"
+                    },
+                    "style": {
+                        "palette_mode": "none"
+                    }
+                },
+                "common": {
+                    "metric_ops": [
+                        "count",
+                        "count_distinct",
+                        "sum",
+                        "avg",
+                        "min",
+                        "max"
+                    ],
+                    "time_buckets": [
+                        "hour",
+                        "day",
+                        "week",
+                        "month",
+                        "year"
+                    ],
+                    "sort_modes": [
+                        "metric_desc",
+                        "metric_asc",
+                        "dimension_asc",
+                        "dimension_desc"
+                    ],
+                    "limits": {
+                        "top_k_min": 3,
+                        "top_k_max": 50,
+                        "default_top_k": 10
+                    }
+                }
+            },
+            "show_raw_data": true,
+            "exportable": true,
+            "full_screen_enabled": true
+        },
+        "routing": {
+            "type": "data_query",
+            "intent": "run_sql",
+            "confidence": 0.9
+        },
+        "followups": [
+            {
+                "id": "fu_1",
+                "text": "🔍 Filter by specific criteria (showing 5,000 rows)"
+            },
+            {
+                "id": "fu_2",
+                "text": "Group by a category to see patterns"
+            },
+            {
+                "id": "fu_3",
+                "text": "Add more filters or conditions"
+            }
+        ],
+        "debug": {
+            "normalized_user_request": "get all the customers who are in pune",
+            "requires_date": null,
+            "complexity": "medium",
+            "sql_executed": "SELECT * FROM customers WHERE city ILIKE '%Pune%'",
+            "row_count": 5000
+        }
+    },
+    "timestamp": 1771847981832,
+    "original_query": "get all the customers who are in pune"
+}

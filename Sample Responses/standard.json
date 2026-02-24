@@ -1,0 +1,18 @@
+{
+    "success": true,
+    "response": {
+        "type": "standard",
+        "intent": "Display weather report",
+        "confidence": 0.95,
+        "message": "I am not capable of providing weather reports",
+        "related queries": [
+            "show BRAG distribution by country",
+            "Compare BRAG distribution over time"
+        ],
+        "metadata": {
+            "requires_data": false,
+            "estimated_complexity": "low",
+            "cache_key": ""
+        }
+    }
+}
