@@ -13,6 +13,9 @@ export interface Message {
   attachments?: string[];
   clarifyingQuestion?: string | null;
   originalQuery?: string;
+  backendMessageId?: string;
+  feedback?: 'LIKED' | 'DISLIKED' | null;
+  isNew?: boolean; // Flag to indicate if the message is newly added
 }
 
 export interface ChatInterfaceProps {
@@ -52,6 +55,7 @@ export interface ChatInterfaceProps {
   isLoading: boolean;
   /** Optional callback fired when the user wants to stop a request. */
   onStopRequest?: () => void;
+  currentProgressStep?: string;
 }
 
 export interface WelcomeCardItem {

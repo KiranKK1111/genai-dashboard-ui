@@ -11,24 +11,30 @@ import {
   loadSessions,
   hydrateChatHistory,
   selectChat,
-  setChatSessionId,
+  deleteChat,
+  renameSessionTitle,
   setError,
 } from '../features/chatSlice';
 import type { ChatMessage } from '../features/chatSlice';
-import { createNewSession, listSessions, getSessionHistory } from '../api';
+import {
+  createNewSession,
+  listSessions,
+  getSessionHistory,
+  deleteSession as apiDeleteSession,
+  renameSession as apiRenameSession,
+} from '../api';
 import type { SessionMetadata } from '../types/sessionState';
+
+const isDev = process.env.NODE_ENV === 'development';
+const log = (...args: any[]) => { if (isDev) console.log(...args); };
 
 export function useSessionManagement() {
   const dispatch = useDispatch<AppDispatch>();
   const { token, logout } = useAuth();
   const [isInitializing, setIsInitializing] = useState(true);
 
-  /**
-   * Extract session metadata from backend response
-   */
   const extractSessionMetadata = (msg: any): SessionMetadata | undefined => {
     if (!msg.session_state && !msg.tool_calls_log) return undefined;
-
     return {
       session_state: msg.session_state || null,
       tool_calls_log: msg.tool_calls_log || [],
@@ -38,119 +44,136 @@ export function useSessionManagement() {
     };
   };
 
+  const mapHistoryToMessages = (
+    sessionId: string,
+    history: Awaited<ReturnType<typeof getSessionHistory>>
+  ): { messages: ChatMessage[]; title: string } => {
+    const messages: ChatMessage[] = [];
+
+    for (let i = 0; i < history.messages.length; i++) {
+      const msg = history.messages[i];
+      if (!msg.query) continue;
+
+      messages.push({
+        id: `${sessionId}-user-${i}`,
+        role: 'user',
+        content: msg.query,
+        timestamp: msg.queried_at || msg.updated_at || '',
+        backendMessageId: msg.id || undefined,
+      });
+
+      if (msg.response && Object.keys(msg.response).length > 0) {
+        const filesUsed = msg?.response?.artifacts?.files_used;
+        if (Array.isArray(filesUsed) && filesUsed.length > 0) {
+          const lastUser = messages[messages.length - 1];
+          if (lastUser?.role === 'user') {
+            lastUser.attachments = filesUsed.map(
+              (f: any) => f.filename || f.file_id || 'file'
+            );
+          }
+        }
+
+        let messageContent = '';
+        if (msg.response.assistant?.content && Array.isArray(msg.response.assistant.content)) {
+          messageContent = msg.response.assistant.content[0]?.text || 'Response received';
+        } else if (msg.response.message) {
+          messageContent = msg.response.message;
+        } else {
+          messageContent = 'Response received';
+        }
+
+        const stopped =
+          messageContent.toLowerCase().includes('stopped by user') ||
+          messageContent.toLowerCase().includes('was stopped') ||
+          messageContent.toLowerCase().includes('execution was stopped');
+
+        if (stopped) {
+          messages.pop();
+          continue;
+        }
+
+        messages.push({
+          id: `${sessionId}-assistant-${i}`,
+          role: 'assistant',
+          content: messageContent,
+          timestamp: msg.responded_at || msg.updated_at || '',
+          response: msg.response,
+          relatedQueries:
+            msg.response.followups?.map((f: any) => f.text) ||
+            msg.response.related_queries ||
+            [],
+          confidence: msg.response.routing?.confidence,
+          sessionMetadata: extractSessionMetadata(msg),
+          backendMessageId: msg.id || msg.response?.id || undefined,
+          feedback: msg.feedback || null,
+        });
+      }
+    }
+
+    const firstMsg = history.messages[0];
+    let title = 'New Chat';
+    if (firstMsg?.query && typeof firstMsg.query === 'string' && firstMsg.query.length > 0) {
+      title = firstMsg.query.slice(0, 50);
+    }
+
+    return { messages, title };
+  };
+
   // Initialize sessions on mount
   useEffect(() => {
     if (!token) return;
 
     const initializeSessions = async () => {
       try {
-        console.log('[SessionManagement] Initializing sessions with token');
-        const sessionsData = await listSessions(token);
-        console.log('[SessionManagement] Received sessions:', sessionsData.sessions);
-        
+        log('[SessionManagement] Initializing sessions');
+        const sessionsData = await listSessions(token, 1, 20);
+
+        // Backend returns newest first; keep that order
+        const sessions = sessionsData.sessions;
         dispatch(
           loadSessions(
-            sessionsData.sessions.map((s) => ({
+            sessions.map((s) => ({
               sessionId: s.session_id,
               createdAt: s.created_at,
+              title: s.title || undefined,
+              messageCount: s.message_count,
+              lastUpdated: s.last_updated || undefined,
             }))
           )
         );
 
-        // Load full history for all sessions
-        if (sessionsData.sessions.length > 0) {
-          console.log('[SessionManagement] Loading history for', sessionsData.sessions.length, 'sessions');
-          for (const session of sessionsData.sessions) {
-            try {
-              console.log('[SessionManagement] Loading history for session:', session.session_id);
-              const history = await getSessionHistory(token, session.session_id);
-              console.log('[SessionManagement] Loaded', history.messages.length, 'messages for session:', session.session_id);
-              
-              if (!history.messages || history.messages.length === 0) {
-                console.log('[SessionManagement] No messages in history for session:', session.session_id);
+        if (sessions.length > 0) {
+          // Load history for all sessions in parallel (first 10 to avoid overwhelming)
+          const sessionsToLoad = sessions.slice(0, 10);
+          await Promise.allSettled(
+            sessionsToLoad.map(async (session) => {
+              try {
+                const history = await getSessionHistory(token, session.session_id);
+                if (!history.messages || history.messages.length === 0) {
+                  dispatch(
+                    hydrateChatHistory({
+                      sessionId: session.session_id,
+                      title: session.title || 'New Chat',
+                      messages: [],
+                    })
+                  );
+                  return;
+                }
+                const { messages, title } = mapHistoryToMessages(session.session_id, history);
                 dispatch(
                   hydrateChatHistory({
                     sessionId: session.session_id,
-                    title: 'Chat',
-                    messages: [],
+                    title: session.title || title,
+                    messages,
                   })
                 );
-                continue;
+              } catch (historyErr) {
+                log('[SessionManagement] Failed to load history for session', session.session_id);
               }
-              
-              const messages: ChatMessage[] = [];
-              
-              // Map backend message structure to frontend chat messages
-              // Each backend message contains either a user query or assistant response
-              history.messages.forEach((msg, index) => {
-                // Handle user query messages
-                if (msg.response_type === 'user_query' && msg.query) {
-                  messages.push({
-                    id: `${session.session_id}-user-${index}`,
-                    role: 'user',
-                    content: msg.query,
-                    timestamp: msg.queried_at || msg.created_at,
-                  });
-                }
-                
-                // Handle assistant response messages
-                if (msg.response_type === 'standard' && msg.response) {
-                  let messageContent = '';
-                  
-                  // Try to get content from structured response
-                  if (msg.response.assistant?.content && Array.isArray(msg.response.assistant.content)) {
-                    const firstBlock = msg.response.assistant.content[0];
-                    messageContent = firstBlock?.text || 'Response received';
-                  } else if (msg.response.message) {
-                    messageContent = msg.response.message;
-                  } else {
-                    messageContent = 'Response received';
-                  }
-                  
-                  const assistantMessage: ChatMessage = {
-                    id: `${session.session_id}-assistant-${index}`,
-                    role: 'assistant',
-                    content: messageContent,
-                    timestamp: msg.responded_at || msg.created_at,
-                    response: msg.response, // Attach full response for rendering with visualizations
-                    relatedQueries: msg.response.followups?.map((f: any) => f.text) || [],
-                    confidence: msg.response.routing?.confidence,
-                    sessionMetadata: extractSessionMetadata(msg), // Extract session state
-                  };
-                  
-                  messages.push(assistantMessage);
-                }
-              });
-              
-              const firstMessage = history.messages[0];
-              let title = 'Chat';
-              if (firstMessage) {
-                const messageText = firstMessage.query || firstMessage.content;
-                if (messageText && typeof messageText === 'string' && messageText.length > 0) {
-                  title = messageText.slice(0, 50);
-                }
-              }
-              
-              console.log('[SessionManagement] Hydrating chat history with title:', title, 'messages:', messages.length);
-              dispatch(
-                hydrateChatHistory({
-                  sessionId: session.session_id,
-                  title,
-                  messages,
-                })
-              );
-            } catch (historyErr: any) {
-              console.error('[SessionManagement] Failed to load history for session', session.session_id, historyErr);
-            }
-          }
-          
-          if (sessionsData.sessions.length > 0) {
-            const firstSessionId = sessionsData.sessions[0].session_id;
-            console.log('[SessionManagement] Selecting first session:', firstSessionId);
-            dispatch(selectChat(firstSessionId));
-          }
-        } else {
-          console.log('[SessionManagement] No sessions found');
+            })
+          );
+
+          dispatch(selectChat(sessions[0].session_id));
         }
       } catch (err: any) {
         console.error('[SessionManagement] Failed to load sessions:', err);
@@ -170,76 +193,76 @@ export function useSessionManagement() {
     };
 
     initializeSessions();
-  }, [token, dispatch, logout]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
 
   const createNewChat = useCallback(async () => {
     if (!token) return null;
-
-    try {
-      const sessionData = await createNewSession(token);
-      return {
-        chatId: Date.now().toString(),
-        sessionId: sessionData.session_id,
-      };
-    } catch (err: any) {
-      throw err;
-    }
+    const sessionData = await createNewSession(token);
+    return {
+      chatId: crypto.randomUUID(),
+      sessionId: sessionData.session_id,
+    };
   }, [token]);
 
-  const loadChatHistory = useCallback(
+  const refreshSessions = useCallback(async () => {
+    if (!token) return;
+    try {
+      const sessionsData = await listSessions(token, 1, 20);
+      dispatch(
+        loadSessions(
+          sessionsData.sessions.map((s) => ({
+            sessionId: s.session_id,
+            createdAt: s.created_at,
+            title: s.title || undefined,
+            messageCount: s.message_count,
+            lastUpdated: s.last_updated || undefined,
+          }))
+        )
+      );
+    } catch (err: any) {
+      log('[SessionManagement] Failed to refresh sessions:', err?.message);
+    }
+  }, [token, dispatch]);
+
+  const deleteChatSession = useCallback(
     async (chatId: string, sessionId: string) => {
       if (!token) return;
-
+      // Optimistic: remove from Redux immediately
+      dispatch(deleteChat(chatId));
       try {
-        const history = await getSessionHistory(token, sessionId);
-        const messages: ChatMessage[] = [];
-        
-        // Map backend message structure to frontend chat messages
-        history.messages.forEach((msg, index) => {
-          // Handle user query messages
-          if (msg.response_type === 'user_query' && msg.query) {
-            messages.push({
-              id: `${sessionId}-user-${index}`,
-              role: 'user',
-              content: msg.query,
-              timestamp: msg.queried_at || msg.created_at,
-            });
-          }
-          
-          // Handle assistant response messages
-          if (msg.response_type === 'standard' && msg.response) {
-            let messageContent = '';
-            
-            // Try to get content from structured response
-            if (msg.response.assistant?.content && Array.isArray(msg.response.assistant.content)) {
-              const firstBlock = msg.response.assistant.content[0];
-              messageContent = firstBlock?.text || 'Response received';
-            } else if (msg.response.message) {
-              messageContent = msg.response.message;
-            } else {
-              messageContent = 'Response received';
-            }
-            
-            const assistantMessage: ChatMessage = {
-              id: `${sessionId}-assistant-${index}`,
-              role: 'assistant',
-              content: messageContent,
-              timestamp: msg.responded_at || msg.created_at,
-              response: msg.response, // Attach full response with visualizations
-              relatedQueries: msg.response.followups?.map((f: any) => f.text) || [],
-              confidence: msg.response.routing?.confidence,
-              sessionMetadata: extractSessionMetadata(msg), // Extract session state
-            };
-            
-            messages.push(assistantMessage);
-          }
-        });
-        
-        return messages;
+        await apiDeleteSession(token, sessionId);
       } catch (err: any) {
-        console.error('[SessionManagement] Failed to load chat history:', err);
-        throw err;
+        console.error('[SessionManagement] Failed to delete session:', err?.message);
+        // Re-fetch to restore actual state
+        await refreshSessions();
       }
+    },
+    [token, dispatch, refreshSessions]
+  );
+
+  const renameChatSession = useCallback(
+    async (chatId: string, sessionId: string, title: string) => {
+      if (!token || !title.trim()) return;
+      // Optimistic update
+      dispatch(renameSessionTitle({ chatId, title: title.trim() }));
+      try {
+        await apiRenameSession(token, sessionId, title.trim());
+      } catch (err: any) {
+        console.error('[SessionManagement] Failed to rename session:', err?.message);
+        // Re-fetch to restore actual title
+        await refreshSessions();
+      }
+    },
+    [token, dispatch, refreshSessions]
+  );
+
+  const loadChatHistory = useCallback(
+    async (_chatId: string, sessionId: string) => {
+      if (!token) return;
+      const history = await getSessionHistory(token, sessionId);
+      const { messages } = mapHistoryToMessages(sessionId, history);
+      return messages;
     },
     [token]
   );
@@ -248,5 +271,8 @@ export function useSessionManagement() {
     isInitializing,
     createNewChat,
     loadChatHistory,
+    refreshSessions,
+    deleteChatSession,
+    renameChatSession,
   };
 }

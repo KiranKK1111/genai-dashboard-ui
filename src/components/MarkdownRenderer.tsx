@@ -1,8 +1,3 @@
-/**
- * Markdown Renderer Component
- * Renders markdown content with proper styling
- */
-
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import {
@@ -23,24 +18,52 @@ import { vs } from 'react-syntax-highlighter/dist/esm/styles/prism';
 interface MarkdownRendererProps {
   content: string;
   isMobile?: boolean;
+  compact?: boolean;
+}
+
+export function autoCloseMarkdown(text: string): string {
+  let result = text;
+
+  // Close unclosed fenced code blocks
+  const fences = result.match(/```/g);
+  if (fences && fences.length % 2 !== 0) result += '\n```';
+
+  // Close unclosed inline code (only if not inside a fenced block)
+  const backticks = result.match(/(?<!`)`(?!`)/g);
+  if (backticks && backticks.length % 2 !== 0) result += '`';
+
+  // Close unclosed bold
+  const bolds = result.match(/\*\*/g);
+  if (bolds && bolds.length % 2 !== 0) result += '**';
+
+  // Close unclosed italic (single * not part of **)
+  const italics = (result.match(/(?<!\*)\*(?!\*)/g) || []);
+  if (italics.length % 2 !== 0) result += '*';
+
+  return result;
 }
 
 const InlineCode = styled('code')(({ theme }) => ({
-  backgroundColor: theme.palette.mode === 'dark' ? '#2a2a2a' : '#f0f0f0',
-  color: theme.palette.mode === 'dark' ? '#4aa6ff' : '#c41e50',
-  padding: '2px 6px',
-  borderRadius: '4px',
-  fontSize: '0.9em',
-  fontFamily: "'Courier New', monospace",
+  display: 'inline',
+  backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+  color: theme.palette.mode === 'dark' ? '#e879f9' : '#9333ea',
+  padding: '1px 5px',
+  borderRadius: '3px',
+  fontSize: '0.85em',
+  fontFamily: '"Courier New", monospace',
 }));
 
-export function MarkdownRenderer({ content, isMobile = false }: MarkdownRendererProps) {
+export function MarkdownRenderer({ content, isMobile = false, compact = false }: MarkdownRendererProps) {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
 
   return (
     <ReactMarkdown
       components={{
+        // In react-markdown v8+, fenced code blocks render as <pre><code>.
+        // We handle all styling in the code renderer, so strip the <pre> wrapper.
+        pre: ({ children }) => <>{children}</>,
+
         // Headings
         h1: ({ node, ...props }) => (
           <Typography
@@ -83,8 +106,10 @@ export function MarkdownRenderer({ content, isMobile = false }: MarkdownRenderer
         p: ({ node, ...props }) => (
           <Typography
             variant="body2"
+            component={compact ? 'span' : 'p'}
             sx={{
-              mb: 1,
+              mb: compact ? 0 : 1,
+              display: compact ? 'inline' : undefined,
               lineHeight: 1.6,
               color: isDark ? '#e0e0e0' : '#333333',
               fontSize: isMobile ? '13px' : '14px',
@@ -100,12 +125,13 @@ export function MarkdownRenderer({ content, isMobile = false }: MarkdownRenderer
             sx={{
               mb: 1,
               pl: 2,
-              color: isDark ? '#e0e0e0' : '#333333',
               '& li': {
-                mb: 0.5,
-                lineHeight: 1.5,
+                lineHeight: 1.65,
                 fontSize: isMobile ? '13px' : '14px',
               },
+              // Collapse block-level <p> wrappers inside list items to inline
+              '& li > p': { display: 'inline', margin: 0 },
+              '& li > p + p::before': { content: '" "' },
             }}
             {...props}
           />
@@ -119,9 +145,12 @@ export function MarkdownRenderer({ content, isMobile = false }: MarkdownRenderer
               color: isDark ? '#e0e0e0' : '#333333',
               '& li': {
                 mb: 0.5,
-                lineHeight: 1.5,
+                lineHeight: 1.65,
                 fontSize: isMobile ? '13px' : '14px',
               },
+              // Collapse block-level <p> wrappers inside list items to inline
+              '& li > p': { display: 'inline', margin: 0 },
+              '& li > p + p::before': { content: '" "' },
             }}
             {...props}
           />
@@ -143,12 +172,12 @@ export function MarkdownRenderer({ content, isMobile = false }: MarkdownRenderer
           />
         ),
 
-        // Code blocks
-        code: ({ node, inline, className, children, ...props }: any) => {
+        code: ({ node, className, children, ...props }: any) => {
           const match = /language-(\w+)/.exec(className || '');
-          const language = match ? match[1] : 'text';
+          const isBlock = !!match || String(children).includes('\n');
 
-          if (!inline) {
+          if (isBlock) {
+            const language = match ? match[1] : 'text';
             return (
               <Box
                 sx={{
@@ -176,12 +205,8 @@ export function MarkdownRenderer({ content, isMobile = false }: MarkdownRenderer
             );
           }
 
-          // Inline code
-          return (
-            <InlineCode>
-              {children}
-            </InlineCode>
-          );
+          // Inline code - single-line backtick span
+          return <InlineCode>{children}</InlineCode>;
         },
 
         // Links

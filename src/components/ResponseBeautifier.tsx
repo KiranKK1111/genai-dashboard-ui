@@ -1,8 +1,3 @@
-/**
- * Structured Response Renderer
- * Renders LLM responses with structured content (paragraphs, tables, lists, callouts)
- */
-
 import React from 'react';
 import {
   Box,
@@ -14,7 +9,66 @@ import {
 import { styled } from '@mui/material/styles';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { VisualizationRouter } from './visualizations/VisualizationRouter';
-import type { Visualization } from '../api';
+import { ArtifactRenderer } from './ArtifactRenderer';
+import type { Visualization, RenderArtifact, DataPayload } from '../api';
+
+/**
+ * Renders a single list-item string inline - no block wrappers.
+ * Handles code, *bold, *italic spans without using ReactMarkdown.
+ */
+function InlineItem({ text, isDark, isMobile }: { text: string; isDark: boolean; isMobile?: boolean }) {
+  // Collapse newlines/double-spaces so field\n: desc stays on one line
+  const flat = text.replace(/\s*\n+\s*/g, ' ').trim();
+
+  // Tokenize: split by code, *bold, *italic
+  const parts: React.ReactNode[] = [];
+  const re = /(`[^`]+`|\*\*[^*]+\*\*|\*[^*]+\*)/g;
+  let last = 0;
+  let m: RegExpExecArray | null;
+  let key = 0;
+
+  while ((m = re.exec(flat)) !== null) {
+    if (m.index > last) parts.push(<span key={key++}>{flat.slice(last, m.index)}</span>);
+    const tok = m[0];
+    if (tok.startsWith('`')) {
+      parts.push(
+        <Box
+          key={key++}
+          component="code"
+          sx={{
+            fontSize: '12px',
+            fontFamily: "'Courier New', monospace",
+            backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+            borderRadius: '3px',
+            padding: '1px 5px',
+            color: isDark ? '#e879f9' : '#9333ea',
+          }}
+        >
+          {tok.slice(1, -1)}
+        </Box>
+      );
+    } else if (tok.startsWith('**')) {
+      parts.push(<strong key={key++}>{tok.slice(2, -2)}</strong>);
+    } else {
+      parts.push(<em key={key++}>{tok.slice(1, -1)}</em>);
+    }
+    last = m.index + tok.length;
+  }
+  if (last < flat.length) parts.push(<span key={key++}>{flat.slice(last)}</span>);
+
+  return (
+    <Typography
+      component="span"
+      sx={{
+        fontSize: isMobile ? '13px' : '14px',
+        lineHeight: 1.65,
+        color: isDark ? '#e0e0e0' : '#333333',
+      }}
+    >
+      {parts}
+    </Typography>
+  );
+}
 
 interface ContentBlock {
   type: 'paragraph' | 'table' | 'bullets' | 'numbered' | 'callout' | 'code';
@@ -29,18 +83,26 @@ interface ContentBlock {
 
 interface ResponseBeautifierProps {
   content: ContentBlock[];
-  isMobile?: boolean;
+  isMobile: boolean;
   selectedVizType?: string;
-  response?: any; // Full response object with visualizations data
+  response: any; // Full response object with visualizations data
+  /** Artifact-centric render artifacts (ResponseGeneration.md) */
+  renderArtifacts?: RenderArtifact[];
+  /** Structured data payload for chart artifacts */
+  dataPayload?: DataPayload | null;
+  /** During typewriter animation - partially-revealed text to display for text blocks. */
+  typedContent?: string;
+  /** False while typewriter is still animating. */
+  typingDone?: boolean;
 }
 
 const CalloutBox = styled(Paper)(({ theme }) => ({
   padding: '12px 16px',
   marginBottom: '12px',
-  borderLeft: `4px solid #3b82f6`,
+  borderLeft: '4px solid #3b82f6',
   borderRadius: '4px',
-  backgroundColor: theme.palette.mode === 'dark'
-    ? 'rgba(59, 130, 246, 0.1)'
+  backgroundColor: theme.palette.mode === 'dark' 
+    ? 'rgba(59, 130, 246, 0.1)' 
     : 'rgba(59, 130, 246, 0.05)',
   '&.warning': {
     borderLeftColor: '#f59e0b',
@@ -56,16 +118,12 @@ const CalloutBox = styled(Paper)(({ theme }) => ({
   },
 }));
 
-
-
 const BulletList = styled(Box)(({ theme }) => ({
   '& li': {
-    marginBottom: '6px',
+    marginBottom: '4px',
     lineHeight: 1.6,
     fontSize: '14px',
-    color: theme.palette.mode === 'dark'
-      ? '#e0e0e0'
-      : '#333333',
+    color: theme.palette.mode === 'dark' ? '#e0e0e0' : '#333333',
   },
 }));
 
@@ -74,6 +132,10 @@ export function ResponseBeautifier({
   isMobile = false,
   selectedVizType,
   response,
+  renderArtifacts,
+  dataPayload,
+  typedContent,
+  typingDone = true,
 }: ResponseBeautifierProps) {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
@@ -98,9 +160,7 @@ export function ResponseBeautifier({
 
       case 'table':
         // Convert headers and rows to array of objects
-        // Format: [{header1: value1, header2: value2}, ...]
         let tableData: Record<string, any>[] = [];
-        
         if (block.rows && block.headers) {
           tableData = block.rows.map((row) => {
             const obj: Record<string, any> = {};
@@ -112,7 +172,7 @@ export function ResponseBeautifier({
         }
 
         const tableVisualization: Visualization = {
-          chart_id: `table-${index}`, 
+          chart_id: `table-${index}`,
           type: 'table',
           title: 'Data Table',
           data: tableData,
@@ -121,17 +181,20 @@ export function ResponseBeautifier({
 
         return (
           <Box key={index} sx={{ mb: 2 }}>
-            <VisualizationRouter visualization={tableVisualization} selectedType={selectedVizType} />
+            <VisualizationRouter 
+              visualization={tableVisualization} 
+              selectedType={selectedVizType} 
+            />
           </Box>
         );
 
       case 'bullets':
         return (
-          <Box key={index} sx={{ mb: 1.5, ml: 2 }}>
-            <Box component="ul" sx={{ pl: 2, '& li': { marginBottom: '6px', lineHeight: 1.6, fontSize: '14px', color: isDark ? '#e0e0e0' : '#333333' } }}>
+          <Box key={index} sx={{ mb: 1.5 }}>
+            <Box component="ul" sx={{ pl: 3, '& li': { marginBottom: '4px', lineHeight: 1.65 } }}>
               {block.items?.map((item, idx) => (
-                <Box component="li" key={idx} sx={{ display: 'flex', gap: 1 }}>
-                  <span style={{ color: isDark ? '#a0aec0' : '#666666', marginRight: '8px' }}>•</span> {item}
+                <Box component="li" key={idx}>
+                  <InlineItem text={item} isDark={isDark} isMobile={isMobile} />
                 </Box>
               ))}
             </Box>
@@ -140,10 +203,12 @@ export function ResponseBeautifier({
 
       case 'numbered':
         return (
-          <Box key={index} sx={{ mb: 1.5, ml: 2 }}>
-            <Box component="ol" sx={{ pl: 2, listStyleType: 'decimal', '& li': { marginBottom: '6px', lineHeight: 1.6, fontSize: '14px', color: isDark ? '#e0e0e0' : '#333333' } }}>
+          <Box key={index} sx={{ mb: 1.5 }}>
+            <Box component="ol" sx={{ pl: 3, listStyleType: 'decimal', '& li': { marginBottom: '4px', lineHeight: 1.65 } }}>
               {block.items?.map((item, idx) => (
-                <Box component="li" key={idx}>{item}</Box>
+                <Box component="li" key={idx}>
+                  <InlineItem text={item} isDark={isDark} isMobile={isMobile} />
+                </Box>
               ))}
             </Box>
           </Box>
@@ -154,15 +219,12 @@ export function ResponseBeautifier({
         return (
           <CalloutBox key={index} elevation={0} className={calloutClass}>
             <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
-              <Typography
-                variant="body2"
-                sx={{
-                  fontSize: isMobile ? '12px' : '13px',
-                  lineHeight: 1.5,
-                  color: isDark ? '#c7d2e0' : '#374151',
-                  flex: 1,
-                }}
-              >
+              <Typography variant="body2" sx={{ 
+                fontSize: isMobile ? '12px' : '13px', 
+                lineHeight: 1.5, 
+                color: isDark ? '#c7d2fe' : '#374151',
+                flex: 1 
+              }}>
                 {block.text}
               </Typography>
             </Box>
@@ -201,9 +263,58 @@ export function ResponseBeautifier({
     }
   };
 
+  const hasArtifacts = renderArtifacts && renderArtifacts.length > 0;
+
   return (
     <Box sx={{ width: '100%' }}>
-      {content.map((block, index) => renderContent(block, index))}
+      {/* During typewriter animation: show animated text above, render visual blocks immediately */}
+      {!typingDone && typedContent !== undefined ? (
+        <>
+          {/* Animated text portion */}
+          <Box sx={{ position: 'relative' }}>
+            <MarkdownRenderer
+              content={typedContent}
+              isMobile={isMobile}
+            />
+            {/* Blinking cursor */}
+            <Box
+              component="span"
+              sx={{
+                display: 'inline-block',
+                width: '2px',
+                height: '1em',
+                backgroundColor: '#3b82f6',
+                ml: '1px',
+                verticalAlign: 'text-bottom',
+                animation: 'twCursor 0.7s step-end infinite',
+                '@keyframes twCursor': {
+                  '0%, 100%': { opacity: 1 },
+                  '50%': { opacity: 0 },
+                },
+              }}
+            />
+          </Box>
+          {/* Non-text blocks (tables, charts, code) render immediately */}
+          {!hasArtifacts && content
+            .filter((b) => b.type === 'table' || b.type === 'code')
+            .map((block, index) => renderContent(block, index))}
+          {/* Artifact-centric blocks always render immediately */}
+          {hasArtifacts && (
+            <ArtifactRenderer artifacts={renderArtifacts} dataPayload={dataPayload} />
+          )}
+        </>
+      ) : (
+        <>
+          {/* When artifacts present, skip legacy table/chart content blocks (artifacts replace them) */}
+          {(hasArtifacts
+            ? content.filter((b) => b.type !== 'table')
+            : content
+          ).map((block, index) => renderContent(block, index))}
+          {hasArtifacts && (
+            <ArtifactRenderer artifacts={renderArtifacts} dataPayload={dataPayload} />
+          )}
+        </>
+      )}
     </Box>
   );
 }

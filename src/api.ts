@@ -54,6 +54,9 @@ export interface NewSessionResponse {
 export interface SessionSummary {
   session_id: string;
   created_at: string;
+  last_updated?: string;
+  title?: string;
+  message_count?: number;
 }
 
 export interface SessionsResponse {
@@ -66,10 +69,12 @@ export interface SessionsResponse {
 // ============================================================================
 
 export interface MessageSchema {
+  id: string;
   response_type?: string;
   query?: string;
   queried_at?: string;
   responded_at?: string;
+  updated_at?: string;
   response?: {
     type?: string;
     intent?: string;
@@ -77,8 +82,7 @@ export interface MessageSchema {
     confidence?: number;
     [key: string]: any;
   };
-  created_at: string;
-  // Legacy format support
+  feedback?: 'LIKED' | 'DISLIKED' | null;
   role?: "user" | "assistant";
   content?: string;
   response_metadata?: any;
@@ -226,6 +230,101 @@ export interface IntelligentModalResponse {
 }
 
 // ============================================================================
+// ARTIFACT-CENTRIC RESPONSE TYPES (ResponseGeneration.md architecture)
+// ============================================================================
+
+export interface ColumnMeta {
+  name: string;
+  label?: string;
+  datatype: 'number' | 'string' | 'date' | 'boolean';
+  semantic_role?: 'metric' | 'dimension' | 'time' | 'category' | 'identifier' | 'text' | 'currency' | 'percentage';
+  format_hint?: 'currency' | 'percentage' | 'integer' | 'decimal' | 'date' | 'datetime' | null;
+  nullable?: boolean;
+}
+
+export interface DataPayload {
+  kind: 'sql_result' | 'file_table' | 'document_extract' | 'chat_context' | 'none';
+  columns: ColumnMeta[];
+  rows: Record<string, any>[];
+  row_count: number;
+  truncated: boolean;
+  total_available_rows?: number;
+  preview_only?: boolean;
+}
+
+export type ArtifactType =
+  | 'stat_card'
+  | 'table'
+  | 'bar_chart'
+  | 'line_chart'
+  | 'bar_chart_horizontal'
+  | 'pie_chart'
+  | 'summary_block'
+  | 'text_block';
+
+interface BaseArtifact {
+  id: string;
+  type: ArtifactType;
+  title?: string;
+  order: number;
+}
+
+export interface StatCardArtifact extends BaseArtifact {
+  type: 'stat_card';
+  value: number | string;
+  label: string;
+  subtitle?: string;
+  format_hint?: string;
+}
+
+export interface TableArtifact extends BaseArtifact {
+  type: 'table';
+  columns: string[];
+  rows: any[][];
+  row_count: number;
+  truncated: boolean;
+  sortable: boolean;
+  filterable: boolean;
+  exportable: boolean;
+}
+
+export interface ChartArtifact extends BaseArtifact {
+  type: 'bar_chart' | 'line_chart' | 'bar_chart_horizontal' | 'pie_chart';
+  x_axis: { field: string; label: string };
+  y_axis: { field: string; label: string };
+  series: Array<{ field: string; label: string }>;
+  stacked: boolean;
+  data_ref: string;
+}
+
+export interface TextBlockArtifact extends BaseArtifact {
+  type: 'text_block';
+  content: string;
+}
+
+export interface SummaryBlockArtifact extends BaseArtifact {
+  type: 'summary_block';
+  summary: string;
+  key_points: string[];
+}
+
+export type RenderArtifact =
+  | StatCardArtifact
+  | TableArtifact
+  | ChartArtifact
+  | TextBlockArtifact
+  | SummaryBlockArtifact;
+
+export interface ExecutionMetaInfo {
+  sql?: string;
+  sql_safe?: boolean;
+  limit_applied?: boolean;
+  execution_time_ms?: number;
+  sources?: string[];
+  warnings?: string[];
+}
+
+// ============================================================================
 // VISUALIZATION TYPES
 // ============================================================================
 
@@ -253,13 +352,14 @@ export interface Visualization {
 // ============================================================================
 
 export interface DynamicResponse {
+  id?: string; // Database message ID returned by backend (used for feedback)
   type: "data_query" | "file_query" | "file_lookup" | "config_update" | "standard" | "refinement" | "error";
   success?: boolean;
   sql?: string;
   intent: string;
   confidence: number;
   message: string;
-  data?: any[];
+  legacy_data?: any[];
   visualizations?: Visualization[];
   related_queries?: string[];
   clarifying_question?: string | null;
@@ -292,6 +392,14 @@ export interface DynamicResponse {
     citations?: any[];
     files_used?: any[];
   };
+  // Artifact-centric response fields (ResponseGeneration.md)
+  answer_type?: string;
+  data?: DataPayload;
+  render_artifacts?: RenderArtifact[];
+  clarifications?: any[];
+  execution_meta?: ExecutionMetaInfo;
+  suggested_questions?: string[];
+  mode?: string;
   metadata?: {
     // Legacy fields
     row_count?: number;
@@ -301,7 +409,7 @@ export interface DynamicResponse {
     confidence_score?: number;
     confidence_level?: string;
     complexity_score?: number;
-    
+
     // New architecture fields
     decision_type?: DecisionType;
     decision_confidence?: number;
@@ -327,6 +435,13 @@ export interface DynamicResponseWrapper {
   response: DynamicResponse;
   timestamp?: number | string;
   original_query?: string;
+  id: string;
+}
+
+export type FeedbackValue = 'LIKED' | 'DISLIKED' | null;
+
+export interface FeedbackRequest {
+  feedback: FeedbackValue;
 }
 
 // Union type for all possible response types
@@ -490,9 +605,14 @@ export async function createNewSession(
 /**
  * List all chat sessions for the current user.
  */
-export async function listSessions(token: string): Promise<SessionsResponse> {
+export async function listSessions(
+  token: string,
+  page: number = 1,
+  pageSize: number = 20
+): Promise<SessionsResponse> {
   const res = await apiClient.get<SessionsResponse>("/api/dynamic/sessions", {
     headers: getAuthHeaders(token),
+    params: { page, page_size: pageSize },
   });
   return res.data;
 }
@@ -506,6 +626,36 @@ export async function getSessionHistory(
 ): Promise<SessionHistoryResponse> {
   const res = await apiClient.get<SessionHistoryResponse>(
     `/api/dynamic/history/${sessionId}`,
+    { headers: getAuthHeaders(token) }
+  );
+  return res.data;
+}
+
+/**
+ * Delete a session and all its messages, files, and tool calls.
+ */
+export async function deleteSession(
+  token: string,
+  sessionId: string
+): Promise<{ success: boolean; session_id: string }> {
+  const res = await apiClient.delete<{ success: boolean; session_id: string }>(
+    `/api/dynamic/sessions/${sessionId}`,
+    { headers: getAuthHeaders(token) }
+  );
+  return res.data;
+}
+
+/**
+ * Rename a session (ChatGPT-style title editing).
+ */
+export async function renameSession(
+  token: string,
+  sessionId: string,
+  title: string
+): Promise<{ success: boolean; session_id: string; title: string }> {
+  const res = await apiClient.patch<{ success: boolean; session_id: string; title: string }>(
+    `/api/dynamic/sessions/${sessionId}/title`,
+    { title },
     { headers: getAuthHeaders(token) }
   );
   return res.data;
@@ -534,13 +684,20 @@ export async function sendQuery(
   token: string,
   sessionId: string,
   query: string,
-  files?: UploadInput
+  files?: UploadInput,
+  signal?: AbortSignal,
+  trackingId?: string
 ): Promise<DynamicResponseWrapper> {
   const normalizedFiles = normalizeFiles(files);
   const formData = new FormData();
   
   formData.append("session_id", sessionId);
   formData.append("query", query);
+  
+  // Pass tracking ID to backend as message_id for progress tracking
+  if (trackingId) {
+    formData.append("message_id", trackingId);
+  }
 
   // Add files if present
   if (normalizedFiles.length > 0) {
@@ -557,10 +714,98 @@ export async function sendQuery(
         ...getAuthHeaders(token),
         // Do NOT set Content-Type manually; axios will set the correct boundary
       },
+      signal,
     }
   );
 
   return res.data;
+}
+
+
+export interface ProgressEvent {
+  step: string;
+  label: string;
+}
+
+export async function* openProgressStream(
+  token: string,
+  messageId: string,
+  signal?: AbortSignal,
+): AsyncGenerator<ProgressEvent> {
+
+  const res = await fetch(
+    `${API_URL}/api/dynamic/messages/${messageId}/progress`,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+      signal,
+    }
+  );
+
+  if (!res.ok || !res.body) {
+    console.warn(
+      '[openProgressStream] Bad response:',
+      res.status,
+      res.statusText
+    );
+    return;
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+
+  let buffer = '';
+
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+
+    const lines = buffer.split('\n');
+    buffer = lines.pop() ?? '';
+
+    for (const line of lines) {
+      if (!line.startsWith('data:')) continue;
+
+      const raw = line.slice(5).trim();
+      if (!raw) continue;
+
+      try {
+        const event: ProgressEvent = JSON.parse(raw);
+
+        yield event;
+
+        if (event.step === 'done') return;
+
+      } catch {
+        // malformed line — skip
+      }
+    }
+  }
+}
+
+export async function stopMessage(
+  token: string,
+  messageId: string
+): Promise<{ success: boolean; stopped: boolean; message_id: string }> {
+  const res = await apiClient.post(
+    `/api/dynamic/messages/${messageId}/stop`,
+    {},
+    { headers: getAuthHeaders(token) }
+  );
+  return res.data;
+}
+
+export async function submitMessageFeedback(
+  token: string,
+  messageId: string,
+  feedback: FeedbackValue
+): Promise<void> {
+  await apiClient.patch(
+    `/api/dynamic/messages/${messageId}/feedback`,
+    { feedback },
+    { headers: getAuthHeaders(token) }
+  );
 }
 
 // ============================================================================

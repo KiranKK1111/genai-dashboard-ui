@@ -37,6 +37,9 @@ const StyledCard = styled(Card)(({ theme }) => ({
   border: theme.palette.mode === 'dark'
     ? '1px solid rgba(148, 163, 184, 0.2)'
     : '1px solid rgba(226, 232, 240, 1)',
+  [theme.breakpoints.down('sm')]: {
+    margin: '0 12px',
+  },
 }));
 
 const GradientAvatar = styled(Avatar)({
@@ -144,7 +147,9 @@ export function LoginPage() {
     <GradientBackground>
       <Container maxWidth="sm">
         <StyledCard>
-          <CardContent sx={{ padding: '48px 40px !important' }}>
+          <CardContent sx={{ 
+            padding: { xs: '32px 24px !important', sm: '48px 40px !important' }
+          }}>
             <Box sx={{ textAlign: 'center', mb: 4 }}>
               <GradientAvatar sx={{ margin: '0 auto 24px' }}>
                 <Sparkles size={32} color="white" />

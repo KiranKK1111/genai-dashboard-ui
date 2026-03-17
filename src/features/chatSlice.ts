@@ -26,6 +26,9 @@ export interface ChatMessage {
   originalQuery?: string;
   // Backend session state metadata (QueryState, tool_calls_log, ambiguity_events)
   sessionMetadata?: SessionMetadata;
+  backendMessageId?: string; // Store backend message ID for potential future use (e.g. feedback)
+  feedback?: 'LIKED' | 'DISLIKED' | null; // Store user feedback on the message
+  isNew?: boolean; // Flag to indicate if this message is newly added and not yet acknowledged by the backend
 }
 
 // A chat consists of a local id, a backend session id, a title and a list of messages.
@@ -145,7 +148,7 @@ const chatSlice = createSlice({
       const { chatId, message } = action.payload;
       const chat = state.chats.find((c) => c.id === chatId);
       if (chat) {
-        chat.messages.push(message);
+        chat.messages.push({ ...message, isNew: true });
       }
     },
 
@@ -175,7 +178,7 @@ const chatSlice = createSlice({
       // Check if chat already exists locally
       let chat = state.chats.find((c) => c.sessionId === sessionId);
       console.log('[Redux] Found chat:', chat?.id, 'with', chat?.messages?.length, 'existing messages');
-      
+
       if (!chat) {
         const id = Date.now().toString();
         chat = {
@@ -202,21 +205,61 @@ const chatSlice = createSlice({
     loadSessions(
       state,
       action: PayloadAction<
-        Array<{ sessionId: string; createdAt: string }>
+        Array<{ sessionId: string; createdAt: string; title?: string; messageCount?: number; lastUpdated?: string }>
       >
     ) {
       const sessions = action.payload;
-      // Merge with existing local chats that haven't been synced yet
-      const syncedChats = state.chats.filter((c) => !c.isSynced);
-      const newChats = sessions.map((session) => ({
-        id: session.sessionId,
-        sessionId: session.sessionId,
-        title: 'Loading...', // Will be updated when history is fetched
-        messages: [],
-        createdAt: session.createdAt,
-        isSynced: true,
-      }));
-      state.chats = [...newChats, ...syncedChats];
+      
+      // Create a map of existing chats by sessionId for quick lookup
+      const existingChatsBySessionId = new Map<string, typeof state.chats[0]>();
+      state.chats.forEach(chat => {
+        if (chat.sessionId) {
+          existingChatsBySessionId.set(chat.sessionId, chat);
+        }
+      });
+      
+      // Track which sessionIds were found in the backend response
+      const foundSessionIds = new Set<string>();
+      
+      // Build the new chats array from backend sessions
+      const newChats = sessions.map((session) => {
+        foundSessionIds.add(session.sessionId);
+        
+        // Check if we already have a local chat with this sessionId
+        const existingChat = existingChatsBySessionId.get(session.sessionId);
+        if (existingChat) {
+          // Keep the existing chat with its messages and title
+          return {
+            ...existingChat,
+            isSynced: true,
+          };
+        }
+        // Create a new chat entry for this session
+        return {
+          id: session.sessionId,
+          sessionId: session.sessionId,
+          title: session.title || 'New Chat',
+          messages: [],
+          createdAt: session.createdAt,
+          isSynced: true,
+        };
+      });
+      
+      // Keep local chats that:
+      // 1. Haven't been synced to a session yet (no sessionId)
+      // 2. OR have a sessionId but weren't in the backend list (race condition protection)
+      //    AND have messages (to avoid keeping stale empty chats)
+      const localChatsToKeep = state.chats.filter((c) => {
+        if (!c.sessionId) return true; // Keep unsynced chats
+        if (!foundSessionIds.has(c.sessionId) && c.messages.length > 0) {
+          // Keep this chat - it has messages but wasn't in backend list (race condition)
+          console.log('[Redux loadSessions] Preserving local chat with messages not in backend list:', c.id, c.sessionId);
+          return true;
+        }
+        return false;
+      });
+      
+      state.chats = [...newChats, ...localChatsToKeep];
     },
 
     /**
@@ -235,6 +278,20 @@ const chatSlice = createSlice({
       state.chats = state.chats.filter((c) => c.id !== chatId);
       if (state.currentChatId === chatId) {
         state.currentChatId = state.chats.length > 0 ? state.chats[0].id : null;
+      }
+    },
+
+    /**
+     * Rename a session locally (optimistic update before API call).
+     */
+    renameSessionTitle(
+      state,
+      action: PayloadAction<{ chatId: string; title: string }>
+    ) {
+      const { chatId, title } = action.payload;
+      const chat = state.chats.find((c) => c.id === chatId || c.sessionId === chatId);
+      if (chat) {
+        chat.title = title;
       }
     },
 
@@ -318,6 +375,26 @@ const chatSlice = createSlice({
       }
     },
 
+
+    updateMessageFeedback(
+      state,
+      action: PayloadAction<{
+        chatId: string;
+        messageId: string;
+        feedback: 'LIKED' | 'DISLIKED' | null;
+      }>
+    ) {
+      const { chatId, messageId, feedback } = action.payload;
+      const chat = state.chats.find((c) => c.id === chatId);
+
+      if (chat) {
+        const message = chat.messages.find((m) => m.id === messageId);
+        if (message) {
+          message.feedback = feedback;
+        }
+      }
+    },
+
     /**
      * Update session metadata (QueryState, tool_calls_log, ambiguity_events)
      * for a chat. Called when backend returns updated session state.
@@ -372,12 +449,14 @@ export const {
   loadSessions,
   clearChats,
   deleteChat,
+  renameSessionTitle,
   setFollowUpSuggestions,
   updateMessageWithMetadata,
   setRefining,
   replaceClarifyingQuestionWithResponse,
   updateSessionMetadata,
   updateMessageSessionMetadata,
+  updateMessageFeedback,
 } = chatSlice.actions;
 
 export default chatSlice.reducer;
